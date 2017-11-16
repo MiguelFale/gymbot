@@ -9,7 +9,7 @@ BOT_ID = os.environ.get("BOT_ID")
 AT_BOT = "<@" + BOT_ID + ">"
 AT_BOT_ALT = "/gym"
 HELP_COMMAND = "help"
-ATTENDANCE_REGXP = re.compile("^\+[0-9]")
+ATTENDANCE_REGXP = re.compile("^\+[0-9]{1,1}$")
 
 # response messages
 INVALID_MSG = "Not sure what you mean. Use the *" + HELP_COMMAND + \
@@ -24,7 +24,7 @@ HELP_MSG = "Hi, I'm Machu. My job is to keep track of gym attendance and leaderb
 					"Available actions:\n"+\
 					"• *leaderboards* *_x_* to check the top _x_ members for gym attendance\n"+\
 					"• *done* to let me know you went to the gym again (identical to +1)\n"+\
-					"• *+_y_* to let me know you went to the gym _y_ additional times\n"
+					"• *+y* to let me know you went to the gym _y_ additional times\n"
 #TABLE_HEADER = "\nMember | Today | Total\n"+\
 #				"------- | ------ | ------\n"
 
@@ -56,6 +56,9 @@ def handle_command(user, command, channel,eventtype):
 
 		elif separatecommand[0] == 'leaderboards':
 
+			# if len(separatecommand) > 1
+			# access [1] to get limit
+			# else do top 10
 			response = LIST_HEADER + "1. " +"Fulano " + "(32)" # TODO replace with DB or text file source
 			#TABLE_HEADER + "Placeholder User | No | 34\n" #replace with DB or text file source
 
