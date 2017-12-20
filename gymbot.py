@@ -1,17 +1,10 @@
 import os, time, re, sys, bleach
 from slackclient import SlackClient
-sys.path.append('/persistence')
-import mongodb
-from mongodb import MongoDBPersistence
+import persistence
+from persistence.mongodb import MongoDBPersistence
 
-''' NEVER POST TOKENS, API KEYS OR BOT IDs PUBLICLY!!!
-	THIS INCLUDES HAVING THEM IN CODE FOR PUBLIC REPOSITORIES
-	USE ENVIRONMENT VARIABLES OR A SIMILAR SEPARATION MECHANISM
-'''
-
-# bot's ID is currently retrieved from environment variables.
-# TODO merge ID retriever from the other file to keep env variables to a minimum
-# bot_id = os.environ.get("BOT_ID")
+# database instance
+DB = MongoDBPersistence()
 
 # bot name to retrieve the ID
 BOT_NAME = 'gym'
@@ -27,6 +20,9 @@ INVALID_MSG = "Not sure what you mean. Use the *" + HELP_COMMAND + \
 				   "* command for more information."
 LIST_HEADER = "\n==GYM ATTENDANCE RANKINGS==\n"
 LIST_HEADER_EMPTY = "Still nothing on the leaderboards."
+LIST_HEADER_USER1 = "went to the gym"
+LIST_HEADER_USER2 = "times, ranked at position"
+LIST_HEADER_USER_EMPTY = "No records for user"
 ADD_MSG1 = "went to the gym"
 ADD_MSG2 = "additional times! "
 #DONE_MSG = "Very good! Unfortunately I cannot yet register your attendance. Try again later!"
@@ -38,7 +34,11 @@ HELP_MSG = "Hi, I'm Machu. My job is to keep track of gym attendance and leaderb
 					"• *done* to let me know you went to the gym again (identical to +1)\n"+\
 					"• *+y* to let me know you went to the gym _y_ additional times\n"
 
-# instantiate Slack & Twilio clients
+''' instantiate Slack & Twilio clients
+	NEVER POST TOKENS, API KEYS OR BOT IDs PUBLICLY!!!
+	THIS INCLUDES HAVING THEM IN CODE FOR PUBLIC REPOSITORIES
+	USE ENVIRONMENT VARIABLES OR A SIMILAR SEPARATION MECHANISM
+'''
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 
 def handle_command(userID, user, command, channel,eventtype):
@@ -71,31 +71,41 @@ def handle_command(userID, user, command, channel,eventtype):
 			top = 10
 			if len(separatecommand) > 1 and isinstance( separatecommand[1], str):
 				usertocheck = separatecommand[1]
-				response = 
+				records = DB.leaderboards(user=usertocheck)
+				if len(records) > 1:
+					i = 1
+					for record in records:
+						if record["name"] == usertocheck:
+							response =  usertocheck + " " + LIST_HEADER_USER1 + " " + records["timeswent"] + " " + LIST_HEADER_USER2 + "" + i
+							break
+						i += 1
+				else:
+					response = LIST_HEADER_USER_EMPTY + " " + usertocheck
 			
 			else:
 				if len(separatecommand) > 1:
 					top = int(separatecommand[1])
-					records = MongoDBPersistence.leaderboards(top)
-					if len(records) > 1
-						i = 1
-						response = LIST_HEADER
-						for record in records:
-							response += str(i) + ". " + bleach.clean(record["name"]) + " (" + bleach.clean(record["timeswent"]) + ")\n"
-							i += 1
-					else:
-						response = LIST_HEADER_EMPTY
+					
+				records = DB.leaderboards(x=top)
+				if len(records) > 1:
+					i = 1
+					response = LIST_HEADER
+					for record in records:
+						response += str(i) + ". " + bleach.clean(record["name"]) + " (" + bleach.clean(record["timeswent"]) + ")\n"
+						i += 1
+				else:
+					response = LIST_HEADER_EMPTY
 
 		elif m:
 			n = int(m.group(0)[1])
 			if n == 0:
 				response = "Do you even lift bruh?"
 			else:
-				MongoDBPersistence.updateAttendance(userID, user,n)
+				DB.updateAttendance(userID, user,n)
 				response = ADD_MSG1 + ' ' + str(n) + ' ' + ADD_MSG2
 
 		elif separatecommand[0] == 'done':
-			MongoDBPersistence.updateAttendance(userID, user,1)
+			DB.updateAttendance(userID, user,1)
 			response = response = ADD_MSG1 + ' ' + str(1) + ' ' + ADD_MSG2
 
 		else:
