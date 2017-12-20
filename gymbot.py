@@ -72,7 +72,7 @@ def handle_command(userID, user, command, channel,eventtype):
 			if len(separatecommand) > 1 and isinstance( separatecommand[1], str):
 				usertocheck = separatecommand[1]
 				records = DB.leaderboards(user=usertocheck)
-				if len(records) > 1:
+				if records.count() > 1:
 					i = 1
 					for record in records:
 						if record["name"] == usertocheck:
@@ -85,9 +85,9 @@ def handle_command(userID, user, command, channel,eventtype):
 			else:
 				if len(separatecommand) > 1:
 					top = int(separatecommand[1])
-					
+
 				records = DB.leaderboards(x=top)
-				if len(records) > 1:
+				if records.count() > 1:
 					i = 1
 					response = LIST_HEADER
 					for record in records:
