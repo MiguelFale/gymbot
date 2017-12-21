@@ -25,12 +25,12 @@ LIST_HEADER_USER2 = "times, ranked at position"
 LIST_HEADER_USER_EMPTY = "No records for user"
 ADD_MSG1 = "went to the gym"
 ADD_MSG2 = "additional times! "
-#DONE_MSG = "Very good! Unfortunately I cannot yet register your attendance. Try again later!"
 WELCOME_MSG = "HELLO! Machu is here to help you get fit. Use the *" + HELP_COMMAND + \
 				   "* command for more information."
 HELP_MSG = "Hi, I'm Machu. My job is to keep track of gym attendance and leaderboards!\n\n"+\
 					"Available actions:\n"+\
 					"• *leaderboards* *_x_* to check the top _x_ members for gym attendance\n"+\
+					"• *leaderboards* *_username_* to check _username_'s attendance\n"+\
 					"• *done* to let me know you went to the gym again (identical to +1)\n"+\
 					"• *+y* to let me know you went to the gym _y_ additional times\n"
 
@@ -83,13 +83,13 @@ def handle_command(userID, user, command, channel,eventtype):
 					i = 1
 					for record in records:
 						if record["name"] == usertocheck:
-							response =  bleach.clean(usertocheck) + " " + LIST_HEADER_USER1 + " " + bleach.clean(str(records["timeswent"])) + " " + LIST_HEADER_USER2 + "" + i
+							response =  bleach.clean(usertocheck) + " " + LIST_HEADER_USER1 + " " + bleach.clean(str(record["timeswent"])) + " " + LIST_HEADER_USER2 + " " + str(i) + ".\n"
 							break
 						i += 1
-				records.close()
 				else:
 					response = LIST_HEADER_USER_EMPTY + " " + usertocheck + "."
-			
+				records.close()
+
 			else:
 				if len(separatecommand) > 1:
 					top = int(separatecommand[1])
@@ -101,9 +101,9 @@ def handle_command(userID, user, command, channel,eventtype):
 					for record in records:
 						response += str(i) + ". " + bleach.clean(record["name"]) + " (" + bleach.clean(str(record["timeswent"])) + ")\n"
 						i += 1
-				records.close()
 				else:
 					response = LIST_HEADER_EMPTY
+				records.close()
 
 		elif m:
 			n = int(m.group(0)[1])

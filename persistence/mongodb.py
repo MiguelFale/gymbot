@@ -2,10 +2,8 @@
 # Subclass needs mongo driver
 import abc,pymongo,sys,os
 from pymongo import MongoClient
-from pymongo.database import Database
 from pymongo.errors import ConnectionFailure
 from pymongo.errors import OperationFailure
-from urllib.parse import quote_plus
 
 # Import abstract class
 from persistence.abstract import Persistence
@@ -14,7 +12,7 @@ from persistence.abstract import Persistence
 class MongoDBPersistence(Persistence):
 
 	def __init__(self):
-
+		'''Initialize mongoDB database connection'''
 		print("Attempting connection with mongoDB server")
 		try:
             #use authentication database 'test'
