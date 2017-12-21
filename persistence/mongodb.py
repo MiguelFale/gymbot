@@ -2,8 +2,10 @@
 # Subclass needs mongo driver
 import abc,pymongo,sys,os
 from pymongo import MongoClient
+from pymongo.database import Database
 from pymongo.errors import ConnectionFailure
 from pymongo.errors import OperationFailure
+from urllib.parse import quote_plus
 
 # Import abstract class
 from persistence.abstract import Persistence
@@ -11,22 +13,23 @@ from persistence.abstract import Persistence
 
 class MongoDBPersistence(Persistence):
 
-	#db = None
-
 	def __init__(self):
+
 		print("Attempting connection with mongoDB server")
-		client = MongoClient(host='localhost',
-							port=27017,
-							username=os.environ.get('MONGODB_USER'),
-							password=os.environ.get('MONGODB_PASSWD'),
-							authSource='gym_database',
-                            authMechanism='DEFAULT')
 		try:
-			print(client.test_database)
-			# The ismaster command is cheap and does not require auth.
+            #use authentication database 'test'
+			client = MongoClient('localhost',
+			username=os.environ.get('MONGODB_USER'),
+			password=os.environ.get('MONGODB_PASSWD'),
+			authSource='test',
+			authMechanism='SCRAM-SHA-1')
+
+            #test server availability (triggers ConnectionFailure)
 			client.admin.command('ismaster')
-			#db = 
-			setattr(self, 'db', client['gym_database'])
+
+            #THEN use normal database 'gym_database'
+			setattr(self, 'db', client.get_database('gym_database'))
+
 		except ConnectionFailure:
 			print("Server not available")
 			sys.exit(1)
@@ -36,14 +39,10 @@ class MongoDBPersistence(Persistence):
 
 	def leaderboards(self,x=10,user=''):
 
-		try:
-			if user == '':
-				return getattr(self,"db").users.find().sort('timeswent',pymongo.ASCENDING).limit(x)
-			else:
-				return getattr(self,"db").users.find().sort('timeswent',pymongo.ASCENDING)
-		except Exception as e:
-			print("EXCEPTION: "+str(e))
-			sys.exit(1)
+		if user == '':
+			return getattr(self,"db").users.find().sort('timeswent',pymongo.ASCENDING).limit(x)
+		else:
+			return getattr(self,"db").users.find().sort('timeswent',pymongo.ASCENDING)
 
 	def updateAttendance(self,userID,user,timeswent=1):
-		return getattr(self,"db").users.update_one({'slackID': userID}, {'$inc': {'timeswent': timeswent}})
+		return getattr(self,"db").users.update_one({'slackID': userID,'name': user}, {'$inc': {'timeswent': timeswent}}, upsert = True)

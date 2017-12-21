@@ -41,6 +41,13 @@ HELP_MSG = "Hi, I'm Machu. My job is to keep track of gym attendance and leaderb
 '''
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 
+def is_number(s):
+	try:
+		float(s)
+		return True
+	except ValueError:
+		return False
+
 def handle_command(userID, user, command, channel,eventtype):
 	"""
 		Receives commands directed at the bot and determines if they
@@ -69,30 +76,32 @@ def handle_command(userID, user, command, channel,eventtype):
 		elif separatecommand[0] == 'leaderboards':
 
 			top = 10
-			if len(separatecommand) > 1 and isinstance( separatecommand[1], str):
+			if len(separatecommand) > 1 and not is_number(separatecommand[1]):
 				usertocheck = separatecommand[1]
 				records = DB.leaderboards(user=usertocheck)
-				if records.count() > 1:
+				if records.count() > 0:
 					i = 1
 					for record in records:
 						if record["name"] == usertocheck:
-							response =  usertocheck + " " + LIST_HEADER_USER1 + " " + records["timeswent"] + " " + LIST_HEADER_USER2 + "" + i
+							response =  bleach.clean(usertocheck) + " " + LIST_HEADER_USER1 + " " + bleach.clean(str(records["timeswent"])) + " " + LIST_HEADER_USER2 + "" + i
 							break
 						i += 1
+				records.close()
 				else:
-					response = LIST_HEADER_USER_EMPTY + " " + usertocheck
+					response = LIST_HEADER_USER_EMPTY + " " + usertocheck + "."
 			
 			else:
 				if len(separatecommand) > 1:
 					top = int(separatecommand[1])
 
 				records = DB.leaderboards(x=top)
-				if records.count() > 1:
+				if records.count() > 0:
 					i = 1
 					response = LIST_HEADER
 					for record in records:
-						response += str(i) + ". " + bleach.clean(record["name"]) + " (" + bleach.clean(record["timeswent"]) + ")\n"
+						response += str(i) + ". " + bleach.clean(record["name"]) + " (" + bleach.clean(str(record["timeswent"])) + ")\n"
 						i += 1
+				records.close()
 				else:
 					response = LIST_HEADER_EMPTY
 
