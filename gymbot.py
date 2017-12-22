@@ -11,11 +11,14 @@ BOT_NAME = 'gym'
 
 # constants
 #AT_BOT = "<@" + bot_id + ">"
-AT_BOT_ALT = "/" + BOT_NAME
+AT_BOT_ALT = "//" + BOT_NAME
 HELP_COMMAND = "help"
+LEADERBOARDS_COMMAND = "leaderboards"
+DONE_COMMAND = 'done'
 ATTENDANCE_REGXP = re.compile("^\+[0-9]{1,1}$")
 
 # response messages
+DYELB = "Do you even lift bruh?"
 INVALID_MSG = "Not sure what you mean. Use the *" + HELP_COMMAND + \
 				   "* command for more information."
 LIST_HEADER = "\n==GYM ATTENDANCE RANKINGS==\n"
@@ -29,9 +32,9 @@ WELCOME_MSG = "HELLO! Machu is here to help you get fit. Use the *" + HELP_COMMA
 				   "* command for more information."
 HELP_MSG = "Hi, I'm Machu. My job is to keep track of gym attendance and leaderboards!\n\n"+\
 					"Available actions:\n"+\
-					"• *leaderboards* *_x_* to check the top _x_ members for gym attendance\n"+\
-					"• *leaderboards* *_username_* to check _username_'s attendance\n"+\
-					"• *done* to let me know you went to the gym again (identical to +1)\n"+\
+					"• *"+LEADERBOARDS_COMMAND+"* *_x_* to check the top _x_ members for gym attendance\n"+\
+					"• *"+LEADERBOARDS_COMMAND+"* *_username_* to check _username_'s attendance\n"+\
+					"• *"+DONE_COMMAND+"* to let me know you went to the gym again (identical to +1)\n"+\
 					"• *+y* to let me know you went to the gym _y_ additional times\n"
 
 ''' instantiate Slack & Twilio clients
@@ -70,10 +73,10 @@ def handle_command(userID, user, command, channel,eventtype):
 		# get attendance indicator, if possible
 		m = ATTENDANCE_REGXP.match(separatecommand[0])
 
-		if separatecommand[0] == 'help':
+		if separatecommand[0] == HELP_COMMAND:
 			response = HELP_MSG
 
-		elif separatecommand[0] == 'leaderboards':
+		elif separatecommand[0] == LEADERBOARDS_COMMAND:
 
 			top = 10
 			if len(separatecommand) > 1 and not is_number(separatecommand[1]):
@@ -108,12 +111,12 @@ def handle_command(userID, user, command, channel,eventtype):
 		elif m:
 			n = int(m.group(0)[1])
 			if n == 0:
-				response = "Do you even lift bruh?"
+				response = DYELB
 			else:
 				DB.updateAttendance(userID, user,n)
 				response = ADD_MSG1 + ' ' + str(n) + ' ' + ADD_MSG2
 
-		elif separatecommand[0] == 'done':
+		elif separatecommand[0] == DONE_COMMAND:
 			DB.updateAttendance(userID, user,1)
 			response = response = ADD_MSG1 + ' ' + str(1) + ' ' + ADD_MSG2
 
@@ -152,9 +155,9 @@ def parse_slack_output(slack_rtm_output,bot_id):
 					#'message' type specifics
 
 					# get text after the @ mention or / invocation, whitespace removed
-					if AT_BOT_ALT in output['text']:
+					if output['text'].startswith(AT_BOT_ALT):
 						text = output['text'].split(AT_BOT_ALT)[1].strip().lower()
-					elif ("<@" + bot_id + ">") in output['text']:
+					elif output['text'].startswith("<@" + bot_id + ">"):
 						text = output['text'].split("<@" + bot_id + ">")[1].strip().lower()
 					else:
 						# This message has no mention of our bot. Ignore.
